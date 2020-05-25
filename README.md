@@ -1,29 +1,23 @@
-# make_arxiv_submission
-Generates a ready to submit arxiv zip file out of your paper.
+# Make Arxiv zip
+Generates a ready to submit arXiv zip file out of your paper.
 
-Just call `bash generate_arxiv_zip.bash` at the root of your paper folder containing your latex source code:
-
+In the folder containing your paper, run
 ```bash
-cd $ROOT
-git clone https://github.com/ToniRV/make_arxiv_submission.git
-mkdir arxiv
-./make_arxiv_submission/generate_arxiv_zip.bash
+curl -sLf https://raw.githubusercontent.com/pantonante/make_arxiv_submission/master/mkarxiv.sh | bash
 ```
 
-where `$ROOT` is the directory of your latex paper.
-
-You will see a `arxiv_submission.zip` file appear in your `$ROOT` directory.
-Just upload this file to arxiv and you are done :+1:
-
-## ToDos:
-
-Currently assumes:
-- An `arxiv` folder is already created: just do `mkdir arxiv`.
-- It is an IEEE submission and `IEEE*.cls` files are present (easy to remove in script provided).
-- Expects `main.tex`, `main.bbl` (so the latex source code must be compiled, and not weirdly named).
+You will see `arxiv_submission.zip` file appear in the current directory.
+Just upload this file to arXiv and you are (hopefully) done :+1:!
 
 ## FAQ
 
-### My refs don't appear
+### I get a warning for my bbl file version
 
-Make sure you compiled your pdf and that your `main.bbl` contains all entries.
+At the moment arXiv runs `biblatex` 3.7, which expects `.bbl` file version 2.8.
+That means that the `.bbl` file you upload should be produced by `biblatex` 3.7 and Biber 2.7 (`biblatex` 3.5 or 3.6 with Biber 2.6 would also be OK).
+This might not be an issue for you, but if you run into errors in the `.bbl` try to re-compile your LaTeX source with the correct versions of `biblatex` or Biber (e.g. TeXLive 2017).
+
+## Acknowledgment
+
+- Toni Rosinol for his first version of this tool
+- [latexpand](https://gitlab.com/latexpand/latexpand)

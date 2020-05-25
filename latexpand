@@ -31,6 +31,7 @@ my $graphics_extensions = ":.pdf:.png:.jpg:.eps";
 my $copy_figures;
 my $expand_usepackage;
 my $expand_bbl;
+my $biber;
 my $fatal;
 my $version;
 my $makeatletter;
@@ -52,6 +53,7 @@ GetOptions (
 	'copy-figures' => \$copy_figures,
 	'expand-usepackage' => \$expand_usepackage,
 	'expand-bbl=s' => \$expand_bbl,
+  'biber=s' => \$biber,
 	'fatal' => \$fatal,
 	'version' => \$version,
         'makeatletter' => \$makeatletter,
@@ -139,6 +141,16 @@ foreach my $file (@ARGV)
 	$in_preamble = 1;
         $inside_import = "";
 	process_file($file, "  ");
+}
+
+sub cat_file
+{
+	my $file = shift;
+	open (my $INFILE, "<", $file) || die "could not open input file '$file'\n";
+	while (<$INFILE>) {
+		print;
+	}
+	close ($INFILE);
 }
 
 sub process_file
@@ -384,6 +396,36 @@ sub process_line
 			$_ = "";
 		}
 	}
+  if ($biber) {
+		if (my ($before, $after)
+		    = /^(.*)\\(?:addbibresource)\{[^\}]*\}(.*)$/) {
+			# See https://tex.stackexchange.com/questions/166518/biblatex-include-bbl-problem-with-verb-field/166526#166526
+			my $biber_noext = $biber;
+			$biber_noext =~ s/.bbl//;
+			print $before . $nl;
+			say $prefix . "Expanding Biber BBL file: $biber\n";
+			print '\begin{filecontents*}{' . $biber . '}' . "\n";
+			cat_file($biber);
+			print "\n";
+			print '\end{filecontents*}
+
+\usepackage{xpatch}
+
+%Patch the biblatex input command.
+%replace "testinput-bbl" if you change the name above.
+%disable if you want to run biblatex/biber normally
+\makeatletter
+\patchcmd\blx@bblinput{\blx@blxinit}
+                      {\blx@blxinit
+                       \def\jobname{' . $biber_noext . '}%new jobname
+                      }{}{\fail}
+\makeatother
+			    ';
+			say $prefix . "End expansion of Biber BBL file: $biber\n";
+			print " " . $nl . $after . "\n";
+			$_ = "";
+		}
+	}
 	if ($show_graphics) {
     if (my ($graphics_path_local) = /^\s*\\graphicspath\{\{([^\}]*)\}\}\s*(%.*)?$/) {
       $graphics_path = $graphics_path_local;
@@ -424,10 +466,24 @@ sub copy_to_dir
   copy($filepath, $output_filepath) or die "Copy failed: $!";
 }
 
+sub unquote
+{
+	my $str = shift;
+	my $x = substr($str, 0, 1);
+	my $y = substr($str, -1, 1);
+	if ($x eq $y && ($x eq '"' || $x eq "'")) {
+		$str = substr($str, 1, -1);
+	}
+	# There's a weird LaTeX syntax: \include{"file\space
+	# with\space spaces"}, so remove these \space when unquoting.
+	$str =~ s/\\space / /g;
+	return $str;
+}
+
 # search $1 in $TEXINPUTS, with possible extensions in $2
 sub find_tex_file
 {
-	my $file = shift;
+	my $file = unquote(shift);
 	my $extensions = (shift || ":");
 	foreach my $ext (split(':', $extensions, -1)) {
 		my $full = find_file_global($file . $ext);
