@@ -48,7 +48,7 @@ fetch_repo () {
 main () {
   need_cmd 'git'
   # Create temp folder
-  tmp_dir=$(mktemp -d -t mkarxiv)
+  tmp_dir=$(mktemp -d)
   # fetch_repo $tmp_dir
   fetch_repo $tmp_dir
   bash $tmp_dir/generate_arxiv_zip.sh
